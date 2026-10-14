@@ -1,0 +1,15 @@
+Phần 1: Phân tích
+1. Sự nhầm lẫn của An về mặt tư duy khi sử dụng lệnh tìm kiếm trong PowerShell
+An đang nhầm lẫn giữa việc tìm kiếm đối tượng tệp tin (Metadata / Tên tệp) với việc truy vấn và bóc tách dữ liệu nội dung bên trong tệp (Content Inspection).
+Khi sử dụng lệnh: Get-ChildItem -Filter "*404*", hệ thống chỉ đi quét tìm các tệp tin có tên chứa ký tự "404" (ví dụ: 404_error.log), chứ hoàn toàn không mở hay đọc bất kỳ dòng chữ nào nằm bên trong tệp access.log.
+2. Sự khác biệt giữa `Get-ChildItem` và `Select-String`
+• Get-ChildItem (hay ls / dir): Chuyên dùng để liệt kê danh sách các tệp tin và thư mục. Nó xử lý các thông tin về cấu trúc file (tên file, kích thước, thời gian chỉnh sửa) chứ không đọc nội dung bên trong.
+• Select-String: Chuyên dùng để quét và tìm kiếm văn bản / từ khóa bên trong nội dung của các tệp tin (tương đương lệnh grep trên Linux). Nó mở tệp, đọc từng dòng và trích xuất chính xác những đoạn văn bản khớp với mẫu tìm kiếm.
+Phần 2: Hoàn thiện
+Câu lệnh PowerShell chuẩn xác
+Để lọc từ khóa error (không phân biệt chữ hoa/thường) bên trong tệp access.log và hiển thị kèm theo số thứ tự dòng, ta sử dụng lệnh sau:
+       Select-String -Path "access.log" -Pattern "error"
+Giải thích hoạt động:
+• -Path "access.log": Chỉ định rõ tệp tin cần quét nội dung.
+• -Pattern "error": Từ khóa cần tìm. Do Select-String mặc định không phân biệt hoa/thường, hệ thống sẽ tự động quét và khớp tất cả các biến thể như error, ERROR, Error, eRrOr,...
+• Số thứ tự dòng: Select-String mặc định tự động đính kèm tên tệp (Filename), số thứ tự dòng (LineNumber) và toàn bộ nội dung dòng log (Line) vào kết quả trả về mà không cần thêm bất kỳ tham số cờ phức tạp nào.

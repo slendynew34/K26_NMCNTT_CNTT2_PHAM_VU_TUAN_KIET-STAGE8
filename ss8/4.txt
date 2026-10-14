@@ -1,0 +1,15 @@
+Xây dựng quy trình lưu nhật ký hệ thống
+Phần 1: So sánh toán tử > và >> trong PowerShell
+Tiêu chí                  Toán tử > (Ghi đè)                                                                                                                 Toán tử >> (Ghi nối tiếp)
+Cơ chế hoạt động          Ghi đè toàn bộ nội dung cũ bằng nội dung mới; nếu tệp chưa có sẽ tự động tạo mới.                                                  Ghi nối tiếp dữ liệu mới vào cuối tệp hiện có; giữ nguyên vẹn lịch sử cũ.
+Rủi ro mất dữ liệu        Rất cao. Nếu chạy nhầm vào cuối tháng khi tệp đã tích lũy dữ liệu, toàn bộ lịch sử 30 ngày trước đó sẽ bị xóa sạch vĩnh viễn.      Thấp. An toàn tuyệt đối cho việc tích lũy nhật ký theo thời gian thực.
+Ngữ cảnh sử dụng thực tế  Phù hợp cho các tác vụ tạo mới báo cáo, sinh file cấu hình lại từ đầu sau mỗi lần chạy script.                                     Bắt buộc dùng cho hệ thống giám sát 24/7, ghi nhật ký lỗi ca sáng/ca đêm liên tục không ngắt quãng.
+Encoding file đầu ra      Sử dụng lệnh nền Out-File (mặc định định dạng UTF-16 trên Windows PowerShell).                                                     Sử dụng lệnh nền Out-File -Append (mặc định định dạng UTF-16 trên Windows PowerShell).
+Phần 2: Lựa chọn giải pháp tối ưu
+Giải pháp tối ưu nhất cho việc ghi nhật ký lỗi phát sinh liên tục trong ngày là sử dụng toán tử ghi nối tiếp >> hoặc sử dụng trực tiếp các cmdlet chính thống có kiểm soát mã hóa (Encoding) để tránh lệch phông chữ.
+Đề xuất giải pháp chuẩn xác:
+Thay vì dùng cú pháp toán tử đơn thuần, đối với hệ thống vận hành chuyên nghiệp, bạn nên dùng lệnh Add-Content kèm khai báo rõ ràng bảng mã utf8 để tương thích tốt với mọi công cụ đọc tệp:
+       Get-Content server.log | Select-String "ERROR" | Add-Content -Path daily_report.txt -Encoding utf8
+• Lý do lựa chọn:
+   1 Đảm bảo an toàn dữ liệu lịch sử tích lũy (không bị xóa trắng do nhầm lẫn toán tử).
+   2 Chủ động kiểm soát bảng mã utf8, giúp các công cụ đọc log hoặc quản trị viên mở tệp xem nội dung không bao giờ bị lỗi font ký tự tiếng Việt hoặc ký tự đặc biệt.

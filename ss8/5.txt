@@ -1,0 +1,53 @@
+Tối ưu quy trình xử lý Log hằng ngày
+Phần 1: Thiết kế kiến trúc
+Cấu trúc 4 khối của tệp auto_report.ps1 được phân chia rõ ràng như sau:
+   1 Header block (Khối thông tin tiêu đề):
+   Sử dụng cú pháp chú thích # (hoặc khối <# ... #>) ở đầu file để ghi chú thông tin tên script, mục đích và ngày khởi tạo.
+   2 Biến cấu hình (Configuration Variables):
+   Khai báo các đường dẫn tệp thông qua ký tự đặc trưng của PowerShell bắt đầu bằng dấu đô-la (ví dụ: $LogFile, $ReportFile).
+   3 Thông báo tiến trình (UI & Status Messages):
+   Sử dụng lệnh Write-Host kết hợp tham số -ForegroundColor để in ra terminal các trạng thái vận hành trực quan, giúp người quản trị dễ dàng theo dõi thời gian thực mà không làm ảnh hưởng đến dữ liệu đầu ra của file báo cáo.
+   4 Logic xử lý (Core Pipeline Logic):
+   Sử dụng chuỗi kết hợp Get-Content (đọc file theo luồng) ➔ Select-String (lọc từ khóa lỗi 404) ➔ Toán tử ghi nối tiếp >> (hoặc Add-Content / Out-File -Append) để lưu kết quả vào báo cáo mà không làm mất dữ liệu lịch sử.
+Phần 2: Sản phẩm (auto_report.ps1)
+Dưới đây là tệp mã nguồn .ps1 hoàn chỉnh:
+<#
+.SYNOPSIS
+    Script tự động hóa lọc lỗi 404 hệ thống bằng PowerShell.
+.DESCRIPTION
+    Đọc tệp log máy chủ, trích xuất các dòng mã lỗi 404 và tự động nối vào tệp báo cáo hàng ngày.
+.AUTHOR
+    DevOps Engineer
+#>
+
+# --- 1. Khai báo biến cấu hình ---
+$LogFile = "server.log"
+$ReportFile = "daily_report.txt"
+$CurrentDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+# --- 2. Thông báo tiến trình khởi động ---
+Write-Host "=================================================" -ForegroundColor Cyan
+Write-Host "       BAT DAU TIEN TRINH LOC LOI TU DONG        " -ForegroundColor Yellow
+Write-Host "=================================================" -ForegroundColor Cyan
+
+# --- 3. Ghi tiêu đề Header vào tệp kết quả (Ghi nối tiếp) ---
+"=== HE THONG TU DONG LOC LOG [$CurrentDate] ===" | Out-File -FilePath $ReportFile -Append
+Write-Host "[*] Da khoi tao dong tieu de cho bao cao moi." -ForegroundColor Green
+
+# --- 4. Logic xử lý: Đọc log, lọc lỗi 404 qua Pipeline và lưu nối ---
+if (Test-Path $LogFile) {
+    Write-Host "[*] Dangquet va trich xuat loi tu $LogFile..." -ForegroundColor Yellow
+    
+    # Thực hiện Pipeline: Đọc file -> Lọc từ khóa 404 -> Ghi nối vào báo cáo
+    Get-Content $LogFile | Select-String -Pattern "404" >> $ReportFile
+    
+    Write-Host "[+] Trich xuat va cap nhat loi 404 thanh cong vao $ReportFile!" -ForegroundColor Green
+} else {
+    Write-Host "[!] Canh bao: Khong tim thay tep log tai duong dan '$LogFile'!" -ForegroundColor Red
+}
+
+Write-Host "=================================================" -ForegroundColor Cyan
+Write-Host " Hoan tat qua trinh xu ly trong chop mat!        " -ForegroundColor Yellow
+Write-Host "=================================================" -ForegroundColor Cyan
+Cách xác nhận thành công
+Chạy lệnh .\auto_report.ps1 trực tiếp trong PowerShell Terminal. Giao diện sẽ hiển thị các thông báo tiến trình màu sắc sinh động, đồng thời tệp daily_report.txt sẽ tự động cập nhật thêm các dòng lỗi 404 mới nhất ở cuối tệp mà vẫn giữ nguyên vẹn lịch sử cũ.

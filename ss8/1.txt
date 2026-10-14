@@ -1,0 +1,15 @@
+Xử lý Log máy chủ dung lượng lớn
+Phần 1: Phân tích
+1. Nguyên nhân máy tính bị "Not Responding" khi mở bằng Notepad
+• Notepad hoạt động bằng cách tải toàn bộ nội dung tệp tin từ đĩa cứng vào bộ nhớ RAM dưới dạng một chuỗi văn bản khổng lồ để người dùng có thể chỉnh sửa tự do.
+• Khi gặp tệp log nặng tới 800MB, ổ RAM máy tính bị quá tải đột ngột, gây nghẽn bộ nhớ, vượt ngưỡng phân bổ tài nguyên của ứng dụng, dẫn đến việc tiến trình bị treo máy (Not Responding) và làm tê liệt toàn bộ hệ thống.
+2. Nguyên nhân lệnh `cat` bị lỗi trong môi trường CMD, vì sao `cat` lại hoạt động trong PowerShell
+• Trong CMD: Lệnh cat vốn là tiện ích kinh điển của hệ điều hành Unix/Linux. Môi trường CMD truyền thống của Windows không có lệnh này, dẫn đến thông báo lỗi "command not found" (hoặc không nhận diện được lệnh).
+• Trong PowerShell: Lệnh cat hoạt động bình thường vì đây thực chất là một Alias (bí danh) tích hợp sẵn của lệnh chính thống Get-Content. PowerShell tự động dịch từ khóa cat thành Get-Content để hỗ trợ những người dùng quen với cú pháp dòng lệnh của hệ điều hành Unix/Linux.
+Phần 2: Hoàn thiện
+1. Xem toàn bộ nội dung tệp.
+Thay vì tải cục bộ toàn bộ 800MB vào RAM cùng một lúc, thao tác trên PowerShell sẽ đọc và đẩy dữ liệu ra màn hình theo từng dòng hoặc từng khối:
+       Get-Content .\server_log_800MB.log
+1. Chỉ xem 10 dòng cuối cùng để kiểm tra lỗi mới nhất.
+Khi xử lý sự cố lúc nửa đêm, bạn chỉ cần quan tâm đến những dòng nhật ký mới phát sinh ở cuối tệp. Sử dụng tham số -Tail vô PowerShell giúp hệ thống lập tức trích xuất chính xác số dòng cần thiết mà không cần đọc lướt qua toàn bộ tệp 800MB:
+       Get-Content .\server_log_800MB.log -Tail 10

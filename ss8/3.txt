@@ -1,0 +1,27 @@
+Thống kê sự cố TIMEOUT trên máy chủ
+Phần 1: Phân tích
+Sơ đồ luồng dữ liệu Pipeline trong PowerShell
+[stdout / Object stream] Get-Content access.log
+  │
+  ▼ (|)
+[Object stream] Select-String -Pattern "TIMEOUT"
+  │
+  ▼ (|)
+[Object stream] Where-Object { $_ -notmatch "NOT TIMEOUT" }
+  │
+  ▼ (|)
+[Final Count / Integer] ( ... ).Count
+• Bước 1 (Get-Content access.log): Đọc tệp log và đẩy từng dòng nội dung thành một luồng đối tượng dòng văn bản đi qua ống dẫn (|).
+• Bước 2 (Select-String -Pattern "TIMEOUT"): Nhận luồng đối tượng, lọc ra các dòng chứa từ khóa "TIMEOUT" và gói chúng thành các đối tượng kết quả (mang theo thông tin về đường dẫn tệp, số thứ tự dòng và nội dung).
+• Bước 3 (Where-Object { $_ -notmatch "NOT TIMEOUT" }): Lọc bỏ các trường hợp ngoại lệ chứa cụm từ "NOT TIMEOUT" để tránh đếm nhầm.
+• Bước 4 (( ... ).Count): Gom toàn bộ tập hợp các đối tượng hợp lệ còn lại và đếm tổng số lượng thông qua thuộc tính .Count của PowerShell, trả về duy nhất một con số tổng kết.
+Phần 2: Triển khai
+Câu lệnh PowerShell hoàn chỉnh
+@(Get-Content access.log | Select-String -Pattern "TIMEOUT" | Where-Object { $_ -notmatch "NOT TIMEOUT" }).Count
+• Giải thích chi tiết:
+- Ký hiệu mảng @(...) ở đầu giúp đảm bảo rằng ngay cả khi kết quả chỉ trả về 0 hoặc 1 dòng, thuộc tính .Count vẫn hoạt động chính xác tuyệt đối mà không bị trả về giá trị trống ($null).
+- Select-String tìm các dòng chứa TIMEOUT.
+- Where-Object { $_ -notmatch "NOT TIMEOUT" } loại bỏ bẫy dữ liệu các dòng ghi sai lệch/phủ định.
+- .Count trích xuất thẳng con số tổng cộng cần báo cáo mà không cần phụ thuộc vào lệnh wc -l của Linux.
+Điểm khác biệt cốt lõi
+Khác với Bash truyền chuỗi văn bản thô qua | buộc bạn phải dùng các công cụ đếm dòng ngoài như wc -l, PowerShell truyền đi đối tượng cấu trúc, cho phép bạn truy xuất trực tiếp các thuộc tính như .Count vô cùng mạnh mẽ và sạch sẽ.

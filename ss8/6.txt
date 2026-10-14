@@ -1,0 +1,50 @@
+Rà soát Script bảo trì hệ thống
+Phần 1: Phân tích (Auditing)
+Đoạn mã do AI gợi ý chứa sai sót cực kỳ nguy hiểm có thể làm sập toàn bộ hệ điều hành hoặc xóa vĩnh viễn dữ liệu quan trọng của máy tính.
+Giải thích ý nghĩa từng tham số:
+• -Path "C:\*": Chỉ định đường dẫn mục tiêu là toàn bộ thư mục gốc của ổ đĩa C: (bao gồm tất cả thư mục hệ thống như Windows, Program Files, User Data,...).
+• -Recurse: Ép buộc quét và thao tác đệ quy xuống sâu bên trong tất cả các thư mục con và tệp tin nằm bên trong.
+• -Force: Ép buộc xóa cả các tệp đang bị ẩn, tệp hệ thống hoặc tệp đang ở trạng thái chỉ đọc (read-only) mà không thèm hiện hộp thoại cảnh báo xác nhận.
+Hậu quả nếu chạy đoạn script trên:
+Lệnh này sẽ ra lệnh cho PowerShell xóa sạch toàn bộ ổ đĩa hệ thống C:, làm hỏng vĩnh viễn cấu trúc của hệ điều hành Windows, khiến máy tính không thể khởi động lại được nữa (màn hình xanh hoặc mất phân hồi boot).
+Áp dụng 3 Nguyên tắc "Vàng" thẩm định mã AI:
+   1 Không bao giờ tin tưởng tuyệt đối (Never Trust Blindly): Luôn kiểm tra kỹ từng tham số đường dẫn trước khi chạy bất kỳ lệnh xóa nào.
+   2 Kiểm tra phạm vi đường dẫn (Scope Isolation): Đảm bảo lệnh chỉ tác động đến thư mục cục bộ của dự án thay vì trỏ đến ổ đĩa hệ thống (C:\).
+   3 Thử nghiệm trên môi trường an toàn (Dry Run / Test): Kiểm tra trước xem lệnh sẽ ảnh hưởng đến những file nào trước khi thực thi lệnh xóa thực tế.
+Phần 2: Triển khai (Safe Script)
+Dưới đây là tệp mã nguồn an toàn safe_cleanup.ps1:
+<#
+.SYNOPSIS
+    Script dọn dẹp log và tệp tin tạm thông minh, an toàn.
+.DESCRIPTION
+    Chuyển đến thư mục dự án, trích xuất dòng cảnh báo từ system.log và chỉ xóa tệp .tmp có giới hạn.
+#>
+
+# 1. Di chuyển đến thư mục dự án (Thay thế đường dẫn phù hợp với máy của bạn)
+Set-Location -Path "C:\SmartLanProject"
+
+# 2. Lọc các dòng chứa chữ "WARNING" từ system.log ra tệp issues.txt
+if (Test-Path "system.log") {
+    Select-String -Path "system.log" -Pattern "WARNING" | Select-Object -ExpandProperty Line | Out-File -FilePath "issues.txt" -Encoding utf8
+    Write-Host "[+] Da trich xuat thanh cong cac canh bao vao issues.txt" -ForegroundColor Green
+} else {
+    Write-Host "[!] Khong tim thay file system.log" -ForegroundColor Yellow
+}
+
+# 3. Chỉ xóa các tệp .tmp bên trong thư mục hiện tại (Khoanh vùng phạm vi an toàn tuyệt đối)
+Get-ChildItem -Path . -Filter "*.tmp" -File | Remove-Item -Force
+Write-Host "[+] Da don dep sach cac tep .tmp tam thoi!" -ForegroundColor Green
+Phần 3: Kiểm thử (Verify)
+Để xác nhận script đã chạy đúng và an toàn, bạn thực hiện các bước kiểm tra sau trực tiếp trên PowerShell:
+1.Xác nhận tệp báo cáo đã được tạo:
+Kiểm tra tồn tại.
+Chạy lệnh: Test-Path issues.txt
+• Cách xác nhận thành công: Terminal trả về kết quả True, chứng minh tệp báo cáo lỗi đã được khởi tạo thành công.
+2.Kiểm tra nội dung tệp báo cáo:
+Đọc file issues.txt.
+Chạy lệnh: Get-Content issues.txt
+• Cách xác nhận thành công: Terminal hiển thị danh sách các dòng nhật ký chứa từ khóa WARNING đã được lọc chính xác.
+3.Xác nhận các tệp .tmp đã bị xóa sạch:
+Kiểm tra thư mục.
+Chạy lệnh: Get-ChildItem -Filter "*.tmp"
+• Cách xác nhận thành công: Terminal không trả về kết quả nào (hoặc danh sách trống), xác nhận toàn bộ các tệp .tmp tạm thời đã được dọn sạch mà không ảnh hưởng đến dữ liệu khác.
